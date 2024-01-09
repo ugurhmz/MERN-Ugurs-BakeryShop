@@ -23,7 +23,6 @@ const UserSchema = new Schema(
         lastName: { type: String, required: true, min:2, max:100},// REQ
         activationToken: { type: String },
         isVerified: { type: Boolean, default: false },
-        isAdmin: { type: Boolean, default: false },
         userImg: { type: String, default: "default.png" },
     },
     { timestamps: true}

@@ -8,4 +8,4 @@ export const registerValidation = Joi.object({
     firstName: Joi.string().required().min(2).max(100),
     lastName: Joi.string().required().min(2).max(100),
     userImg: Joi.string().default("default.png")
-})
+});

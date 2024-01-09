@@ -19,8 +19,10 @@ app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser());
 
 
-// Route
+// BASE_URL
 app.use('/ugurv1/api', appRoutes)
+
+
 
 app.listen(process.env.PORT || 7500, () => {
     console.log(`Listening: ${process.env.PORT}`)
