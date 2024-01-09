@@ -1,7 +1,10 @@
 import express from 'express'
-import dotenv from 'dotenv'
-dotenv.config()
-import cookieParser from 'cookie-parser'
-import connectDB from './database/db.js'
-import appRoutes from './AppRoutes.js'
-import cors from 'cors'
+const app = express()
+
+app.get("/", (req,res) => {
+    res.send("Hello World . . .")
+})
+
+app.listen(3500, () => {
+    console.log("Listenin 3500 . . .")
+})
