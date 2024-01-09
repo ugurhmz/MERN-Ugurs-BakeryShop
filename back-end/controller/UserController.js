@@ -100,7 +100,59 @@ export const userActivationController = async (req,res) => {
 
   } catch(error) {
       res.status(httpStatus.UNAVAILABLE_FOR_LEGAL_REASONS).json({
-
+        error
       })
+  }
+}
+
+//  LOGIN
+export const userLoginController = async ( req,res) => {
+  try {
+
+    const findUser = await UserModel.findOne({
+      email: req.body.email
+    })
+    
+    if(!findUser){
+      return  res.status(httpStatus.NOT_FOUND).json({
+          message: `No user found with this email: ${req.body.email}`
+        })
+    }
+
+    if(!findUser.isVerified) {
+      return res.status(httpStatus.NON_AUTHORITATIVE_INFORMATION).json({
+        error: "Not Activated !!"
+      })
+    }
+
+    const decryptUserPassword = CryptoJs.AES.decrypt(findUser.password, process.env.PAS_SECURITY);
+    const userDbPassword = decryptUserPassword.toString(CryptoJs.enc.Utf8);
+
+    if (userDbPassword !== req.body.password) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        error: "Invalid password !",
+      })
+    }
+
+    const loginToken = jwt.sign(
+      {
+        id: findUser._id
+      },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "7d"}
+    )
+
+    console.log("login token", loginToken)
+    const { password, ...userWithOutPassword } = findUser._doc
+    res.status(httpStatus.OK).json({
+       ...userWithOutPassword,
+       loginToken
+    })
+
+
+  } catch(err) {
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      err
+    })
   }
 }

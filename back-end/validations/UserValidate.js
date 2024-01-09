@@ -9,3 +9,8 @@ export const registerValidation = Joi.object({
     lastName: Joi.string().required().min(2).max(100),
     userImg: Joi.string().default("default.png")
 });
+
+export const loginValidation = Joi.object({
+    email: Joi.string().email().required().min(8),
+    password: Joi.string().required().min(6),
+})
