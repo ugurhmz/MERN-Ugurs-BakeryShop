@@ -156,3 +156,46 @@ export const userLoginController = async ( req,res) => {
     })
   }
 }
+
+// UPDATE USER
+export const userUpdateController = async (req, res) => {
+  try {
+    const userId = req.userId; 
+    const { email, username, password, firstName, lastName, userImg } = req.body;
+
+    const existingUser = await UserModel.findById(userId);
+
+    if (!existingUser) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        error: "User not found.",
+      });
+    }
+
+    const updatedUserData = {
+      email: email || existingUser.email,
+      username: username || existingUser.username,
+      password: password ? CryptoJs.AES.encrypt(password, process.env.PAS_SECURITY).toString() : existingUser.password,
+      firstName: firstName || existingUser.firstName,
+      lastName: lastName || existingUser.lastName,
+      userImg: userImg || existingUser.userImg,
+    };
+
+    // update the user
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      updatedUserData,
+      { new: true }
+    );
+
+    res.status(httpStatus.OK).json({
+      message: "Update successful.",
+      updatedUser: updatedUser,
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      error,
+    });
+  }
+}
