@@ -160,8 +160,8 @@ export const userLoginController = async ( req,res) => {
 // UPDATE USER
 export const userUpdateController = async (req, res) => {
   try {
-    const userId = req.userId; 
-    const { email, username, password, firstName, lastName, userImg } = req.body;
+    const userId = req.userId
+    const { email, username, password, firstName, lastName, userImg } = req.body
 
     const existingUser = await UserModel.findById(userId);
 
@@ -169,6 +169,15 @@ export const userUpdateController = async (req, res) => {
       return res.status(httpStatus.NOT_FOUND).json({
         error: "User not found.",
       });
+    }
+
+    if (email && email !== existingUser.email) {
+      const emailExists = await UserModel.findOne({ email })
+      if (emailExists) {
+        return res.status(httpStatus.BAD_REQUEST).json({
+          error: "The new email is already in use. Please choose another email address.",
+        })
+      }
     }
 
     const updatedUserData = {
@@ -180,7 +189,7 @@ export const userUpdateController = async (req, res) => {
       userImg: userImg || existingUser.userImg,
     };
 
-    // update the user
+    // update the USER
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
       updatedUserData,
