@@ -194,7 +194,7 @@ export const userUpdateController = async (req, res) => {
       userId,
       updatedUserData,
       { new: true }
-    );
+    ).select("-password")
 
     res.status(httpStatus.OK).json({
       message: "Update successful.",
@@ -208,3 +208,5 @@ export const userUpdateController = async (req, res) => {
     });
   }
 }
+
+// FORGET PW
