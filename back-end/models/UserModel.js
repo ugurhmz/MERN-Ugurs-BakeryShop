@@ -24,6 +24,8 @@ const UserSchema = new Schema(
         activationToken: { type: String },
         isVerified: { type: Boolean, default: false },
         userImg: { type: String, default: "default.png" },
+        resetPasswordToken: { type: String },
+        resetPasswordExpiry: { type: Date },
     },
     { timestamps: true}
 )

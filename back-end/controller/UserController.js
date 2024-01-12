@@ -210,3 +210,62 @@ export const userUpdateController = async (req, res) => {
 }
 
 // FORGET PW
+export const resetPasswordController = async (req, res) => {
+  try {
+    const {email} = req.body;
+
+    const findUser = await UserModel.findOne({ email });
+
+    if (!findUser) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        error: "User not found, try again!",
+      });
+    }
+
+    // Generate a secure random password
+    const newPassword = "ugurcuk6767"
+    const resetToken = CryptoJs.lib.WordArray.random(20).toString(CryptoJs.enc.Hex)
+    const resetTokenExpiry = Date.now() + 3600000;
+    findUser.resetPasswordToken = resetToken;
+    findUser.resetPasswordExpiry = resetTokenExpiry;
+
+    await findUser.save();
+    const resetLink = `${process.env.FRONTEND_URL}:${process.env.PORT}/ugurv1/api/user/reset-password?token=${resetToken}&newpw=${newPassword}`;
+
+    const emailInfo = {
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject: "Reset password",
+      html: `<h3>Click the following link to reset your password:</h3>
+             <p><a href="${resetLink}">${resetLink}</a></p>
+             <p>Your new password: ${newPassword}</p>
+             <hr/> `,
+    };
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_FROM,
+        pass: process.env.EMAIL_PW,
+      },
+    });
+
+    const { password, resetPasswordToken, resetPasswordExpiry, ...exceptThePassword } = findUser._doc;
+
+    transporter
+      .sendMail(emailInfo)
+      .then((sent) => {
+        return res.status(httpStatus.OK).json({
+          message: `Password reset link sent to your ${email}.`,
+          updatedUser: exceptThePassword,
+        });
+      })
+      .catch((err) => {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+          error: err,
+        });
+      })
+  } catch (err) {
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+  }
+};
