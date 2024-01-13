@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+    confirmResetPassword,
     registerUserController, resetPasswordController, userActivationController, userLoginController, userUpdateController
 } from '../controller/UserController.js';
 import validate from '../middleware/validate.js';
@@ -13,5 +14,5 @@ router.get("/activation/:token", userActivationController);
 router.post("/login",validate(loginValidation),userLoginController)
 router.put("/update",validate(updateValidation), checkAuthenticated, userUpdateController)
 router.post("/reset-password", resetPasswordController);  // reset linkini gönderir
-router.get("/reset-password", resetPasswordLinkController);  // reset linkine tıkladığında, random pw'yi setler.
+router.get("/reset-password", confirmResetPassword);  // reset linkine tıkladığında, random pw'yi setler.
 export default router;
