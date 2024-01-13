@@ -221,18 +221,14 @@ export const resetPasswordController = async (req, res) => {
       });
     }
 
- 
-    const newPassword = CryptoJs.lib.WordArray.random(12).toString(CryptoJs.enc.Base64);
-
-   
-    const cryptoToken = CryptoJs.lib.WordArray.random(20);
-    const resetToken = cryptoToken.toString(CryptoJs.enc.Hex);
+    const cryptoToken = CryptoJs.lib.WordArray.random(20)
+    const resetToken = cryptoToken.toString(CryptoJs.enc.Hex)
     const resetTokenExpiry = Date.now() + 3600000; // 1 saat
 
-    findUser.resetPasswordToken = resetToken;
-    findUser.resetPasswordExpiry = resetTokenExpiry;
+    findUser.resetPasswordToken = resetToken
+    findUser.resetPasswordExpiry = resetTokenExpiry
 
-    await findUser.save();
+    await findUser.save()
 
     const resetLink = `${process.env.FRONTEND_URL}:${process.env.PORT}/ugurv1/api/user/reset-password?token=${resetToken}`;
 
@@ -244,7 +240,7 @@ export const resetPasswordController = async (req, res) => {
              <p><a href="${resetLink}">${resetLink}</a></p>
              <p>Follow the link to confirm your password reset. Your password will remain the same unless you complete this process.</p>
              <hr/> `,
-    };
+    }
 
     const { password, resetPasswordToken, resetPasswordExpiry, ...exceptThePassword } = findUser._doc;
 
@@ -254,7 +250,7 @@ export const resetPasswordController = async (req, res) => {
         user: process.env.EMAIL_FROM,
         pass: process.env.EMAIL_PW,
       },
-    });
+    })
 
     transporter
       .sendMail(emailInfo)
@@ -262,14 +258,48 @@ export const resetPasswordController = async (req, res) => {
         return res.status(httpStatus.OK).json({
           message: `Password reset link sent to your ${email}. Your new password is provided in the email. Your password will remain the same unless you complete this process.`,
           updatedUser: exceptThePassword,
-        });
+        })
       })
       .catch((err) => {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
           error: err,
-        });
-      });
+        })
+      })
   } catch (err) {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
   }
-};
+}
+
+// Confirm PW When click the link
+export const confirmResetPassword = async (req, res) => {
+  try {
+    const { token } = req.body
+
+    const findUser = await UserModel.findOne({ 
+      resetPasswordToken: token, 
+      resetPasswordExpiry:  { $gt: Date.now() } 
+    })
+
+    if (!findUser) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        error: "Invalid or expired token. Please request a new password reset link.",
+      })
+    }
+
+   
+    const newPassword = CryptoJs.lib.WordArray.random(12).toString(CryptoJs.enc.Base64);
+    findUser.password = newPassword
+
+   
+    findUser.resetPasswordToken = undefined
+    findUser.resetPasswordExpiry = undefined
+
+    await findUser.save()
+
+    return res.status(httpStatus.OK).json({
+      message: `Password reset confirmed. Your password has been updated to: ${newPassword}`,
+    })
+  } catch (err) {
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+  }
+}
