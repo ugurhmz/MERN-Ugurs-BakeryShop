@@ -209,6 +209,7 @@ export const userUpdateController = async (req, res) => {
   }
 }
 
+// Reset PW
 export const resetPasswordController = async (req, res) => {
   try {
     const { email } = req.body;
@@ -273,33 +274,62 @@ export const resetPasswordController = async (req, res) => {
 // Confirm PW When click the link
 export const confirmResetPassword = async (req, res) => {
   try {
-    const { token } = req.body
+    const { token } = req.query;
 
     const findUser = await UserModel.findOne({ 
       resetPasswordToken: token, 
       resetPasswordExpiry:  { $gt: Date.now() } 
-    })
+    });
 
     if (!findUser) {
       return res.status(httpStatus.NOT_FOUND).json({
         error: "Invalid or expired token. Please request a new password reset link.",
-      })
+      });
     }
 
-   
     const newPassword = CryptoJs.lib.WordArray.random(12).toString(CryptoJs.enc.Base64);
-    findUser.password = newPassword
+    findUser.password = CryptoJs.AES.encrypt(newPassword, process.env.PAS_SECURITY);
 
-   
-    findUser.resetPasswordToken = undefined
-    findUser.resetPasswordExpiry = undefined
+    findUser.resetPasswordToken = undefined;
+    findUser.resetPasswordExpiry = undefined;
 
-    await findUser.save()
+    await findUser.save();
 
-    return res.status(httpStatus.OK).json({
-      message: `Password reset confirmed. Your password has been updated to: ${newPassword}`,
-    })
+    // E-posta içeriği için kullanılabilecek yeni şifre
+    const emailNewPassword = newPassword;
+
+    // E-posta gönderimi
+    const emailInfo = {
+      from: process.env.EMAIL_FROM,
+      to: findUser.email, // Kullanıcının e-posta adresi
+      subject: "Password Reset Confirmation",
+      html: `<h3>Password reset confirmed. Your password has been updated.</h3>
+             <p>Your new password: ${emailNewPassword}</p>
+             <p>Use this password for your future logins.</p>
+             <hr/> `,
+    };
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_FROM,
+        pass: process.env.EMAIL_PW,
+      },
+    });
+
+    transporter
+      .sendMail(emailInfo)
+      .then((sent) => {
+        return res.status(httpStatus.OK).json({
+          message: `Password reset confirmed. Your password has been updated. Check your email for the new password.`,
+        });
+      })
+      .catch((err) => {
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+          error: err,
+        });
+      });
   } catch (err) {
-    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err);
   }
-}
+};
