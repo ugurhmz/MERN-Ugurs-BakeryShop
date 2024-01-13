@@ -209,10 +209,9 @@ export const userUpdateController = async (req, res) => {
   }
 }
 
-// FORGET PW
 export const resetPasswordController = async (req, res) => {
   try {
-    const {email} = req.body;
+    const { email } = req.body;
 
     const findUser = await UserModel.findOne({ email });
 
@@ -222,15 +221,17 @@ export const resetPasswordController = async (req, res) => {
       });
     }
 
-    // Generate a secure random password
-    const newPassword = "ugurcuk6767"
-    const resetToken = CryptoJs.lib.WordArray.random(20).toString(CryptoJs.enc.Hex)
-    const resetTokenExpiry = Date.now() + 3600000;
+    // Generate a secure random token
+    const cryptoToken = CryptoJs.lib.WordArray.random(20);
+    const resetToken = cryptoToken.toString(CryptoJs.enc.Hex);
+    const resetTokenExpiry = Date.now() + 3600000; // 1 saat
+
     findUser.resetPasswordToken = resetToken;
     findUser.resetPasswordExpiry = resetTokenExpiry;
 
     await findUser.save();
-    const resetLink = `${process.env.FRONTEND_URL}:${process.env.PORT}/ugurv1/api/user/reset-password?token=${resetToken}&newpw=${newPassword}`;
+
+    const resetLink = `${process.env.FRONTEND_URL}:${process.env.PORT}/ugurv1/api/user/reset-password?token=${resetToken}`;
 
     const emailInfo = {
       from: process.env.EMAIL_FROM,
@@ -238,9 +239,11 @@ export const resetPasswordController = async (req, res) => {
       subject: "Reset password",
       html: `<h3>Click the following link to reset your password:</h3>
              <p><a href="${resetLink}">${resetLink}</a></p>
-             <p>Your new password: ${newPassword}</p>
+             <p>Follow the link to reset your password. You will be prompted to create a new password.</p>
              <hr/> `,
     };
+
+    const { password, resetPasswordToken, resetPasswordExpiry, ...exceptThePassword } = findUser._doc;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -249,8 +252,6 @@ export const resetPasswordController = async (req, res) => {
         pass: process.env.EMAIL_PW,
       },
     });
-
-    const { password, resetPasswordToken, resetPasswordExpiry, ...exceptThePassword } = findUser._doc;
 
     transporter
       .sendMail(emailInfo)
@@ -264,7 +265,7 @@ export const resetPasswordController = async (req, res) => {
         return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
           error: err,
         });
-      })
+      });
   } catch (err) {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json(err)
   }
