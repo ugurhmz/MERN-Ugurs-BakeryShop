@@ -221,7 +221,10 @@ export const resetPasswordController = async (req, res) => {
       });
     }
 
-    // Generate a secure random token
+ 
+    const newPassword = CryptoJs.lib.WordArray.random(12).toString(CryptoJs.enc.Base64);
+
+   
     const cryptoToken = CryptoJs.lib.WordArray.random(20);
     const resetToken = cryptoToken.toString(CryptoJs.enc.Hex);
     const resetTokenExpiry = Date.now() + 3600000; // 1 saat
@@ -239,7 +242,7 @@ export const resetPasswordController = async (req, res) => {
       subject: "Reset password",
       html: `<h3>Click the following link to reset your password:</h3>
              <p><a href="${resetLink}">${resetLink}</a></p>
-             <p>Follow the link to reset your password. You will be prompted to create a new password.</p>
+             <p>Follow the link to confirm your password reset. Your password will remain the same unless you complete this process.</p>
              <hr/> `,
     };
 
@@ -257,7 +260,7 @@ export const resetPasswordController = async (req, res) => {
       .sendMail(emailInfo)
       .then((sent) => {
         return res.status(httpStatus.OK).json({
-          message: `Password reset link sent to your ${email}.`,
+          message: `Password reset link sent to your ${email}. Your new password is provided in the email. Your password will remain the same unless you complete this process.`,
           updatedUser: exceptThePassword,
         });
       })
